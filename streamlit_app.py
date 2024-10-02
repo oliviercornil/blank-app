@@ -4,7 +4,7 @@ import pandas as pd
 from io import BytesIO
 import tempfile
 
-st.title('Extraction de données d’un fichier DXF')
+st.title('Extraction des noms de pièces d’un fichier DXF')
 
 # Télécharger un fichier DXF
 uploaded_file = st.file_uploader("Téléchargez un fichier DXF", type="dxf")
@@ -19,17 +19,21 @@ if uploaded_file is not None:
         # Lire le fichier DXF à partir du fichier temporaire
         doc = ezdxf.readfile(tmp_file_path)
 
-        # Extraire des informations des entités
-        entities_info = []
+        # Extraire des entités de texte (TEXT et MTEXT)
+        room_names = []
         for entity in doc.modelspace():
-            entities_info.append({
-                "type": entity.dxftype(),
-                "layer": entity.dxf.layer
-            })
+            if entity.dxftype() == 'TEXT' or entity.dxftype() == 'MTEXT':
+                text_content = entity.dxf.text
+                # Filtrer les textes par exemple pour "chambre", "salon", etc.
+                if any(keyword in text_content.lower() for keyword in ['chambre', 'salon', 'cuisine', 'salle', 'bureau']):
+                    room_names.append(text_content)
 
-        # Afficher les informations dans un tableau
-        df_entities = pd.DataFrame(entities_info)
-        st.write(df_entities)
+        # Afficher les noms de pièces
+        if room_names:
+            st.write("Noms des pièces trouvés :")
+            st.write(room_names)
+        else:
+            st.write("Aucun nom de pièce trouvé.")
 
     except Exception as e:
         st.error(f"Erreur lors de la lecture du fichier DXF : {str(e)}")
